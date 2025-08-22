@@ -1,0 +1,48 @@
+name: Build & Release Shaka (Custom Fork)
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Dowload the forked repo
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      # 2. Configure Node.js (neccessary for npm)
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      # 3. Configure Python (for build/all.py)
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      # 4. Build using Shaka tools
+      - name: Build with all.py
+        run: python3 build/all.py
+
+      # 5. Pack as .tgz (installable from Github)
+      - name: Package tarball
+        run: npm pack
+
+      # 6. Create release in GitHub with bundles and .tgz
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/shaka-player.compiled.js
+            dist/shaka-player.compiled.debug.js
+            dist/shaka-player.ui.js
+            shaka-player-*.tgz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
